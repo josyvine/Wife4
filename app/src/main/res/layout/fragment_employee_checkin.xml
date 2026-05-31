@@ -103,11 +103,11 @@
             android:textStyle="bold"
             android:backgroundTint="@color/status_green"
             app:cornerRadius="12dp"
-            app:icon="@android:drawable/ic_input_add"
+            app:icon="@drawable/fingerprint_24px"
             app:iconGravity="textTop"
             app:iconSize="28dp" />
 
-        <!-- TRANSIT BUTTON (Bus Icon) -->
+        <!-- TRANSIT BUTTON (Emoji Transportation Icon) -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_transit"
             android:layout_width="0dp"
@@ -119,7 +119,7 @@
             android:textStyle="bold"
             android:backgroundTint="@android:color/darker_gray"
             app:cornerRadius="12dp"
-            app:icon="@drawable/ic_transit_bus"
+            app:icon="@drawable/emoji_transportation_24px"
             app:iconGravity="textTop"
             app:iconSize="28dp" />
 
@@ -135,7 +135,7 @@
             android:textStyle="bold"
             android:backgroundTint="@color/status_red"
             app:cornerRadius="12dp"
-            app:icon="@android:drawable/ic_lock_power_off"
+            app:icon="@drawable/door_open_24px"
             app:iconGravity="textTop"
             app:iconSize="28dp" />
 
