@@ -238,14 +238,16 @@ public class EmployeeCheckInFragment extends Fragment {
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (alarmManager.canScheduleExactAlarms()) {
+        // Standardizing on exact system AlarmClockInfo to bypass deep sleep standbys and OEM power management [4]
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent);
+            alarmManager.setAlarmClock(alarmClockInfo, pendingIntent);
+        } else {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
             } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
             }
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent);
         }
     }
 
@@ -287,15 +289,15 @@ public class EmployeeCheckInFragment extends Fragment {
         if (todayRecord == null || (todayRecord.getCheckInTime() == null && todayRecord.isResumeRequested())) {
             
             boolean isTimeReached = TimeUtils.isTimeReached(shiftStart);
-            boolean isPastGrace = TimeUtils.isPastGracePeriod(shiftStart, 2); // 2-minute late checking [3]
+            boolean isPastGrace = TimeUtils.isPastGracePeriod(shiftStart, 2); // 2-minute strict limit check [3]
             boolean isResumeMode = todayRecord != null && todayRecord.isResumeRequested();
 
             if (isResumeMode) {
-                // If they requested resume, they are clear to check in [3]
+                // If resume requested, employee is clear to perform check-in [3]
                 updateButtonState(true, false, false);
                 binding.tvStatus.setText("Resume Mode: Ready to Check-In at " + locName);
             } else if (isPastGrace) {
-                // Denied: Employee is late by > 2 mins and hasn't clicked Resume [3]
+                // Lockout: Late to check in past the 2-minute mark and resume not requested [3]
                 updateButtonState(false, false, false);
                 binding.tvStatus.setText("You are late. Please select Resume from the options menu to enable check-in.");
             } else if (!isTimeReached) {
@@ -308,7 +310,7 @@ public class EmployeeCheckInFragment extends Fragment {
                 updateButtonState(true, false, false);
                 binding.tvStatus.setText("Status: Traveling Mode Enabled. Ready to Start.");
             } else {
-                // Safe check-in window (within the first 2 minutes of shift) [3]
+                // Normal check-in window (within the first 2 minutes of shift) [3]
                 updateButtonState(true, false, false);
                 binding.tvStatus.setText("Status: Ready to Check-In at " + locName);
             }
