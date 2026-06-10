@@ -1,0 +1,31 @@
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+.idea/caches/
+.idea/libraries/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+
+# Gradle build folders and caches
+.gradle/
+build/
+/build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# System / OS files
+.DS_Store
+Thumbs.db
+
+# Signing assets and keys (never commit these to git)
+private_key.pepk
+*.jks
+*.keystore
+.env
