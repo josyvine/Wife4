@@ -558,7 +558,7 @@
 
                 // 2. Compute RMS volume for the audio block
                 let sum = 0;
-                for (int i = 0; i < inputFloat32.length; i++) {
+                for (let i = 0; i < inputFloat32.length; i++) { // <--- FIXED: 'int' changed to 'let'
                     sum += inputFloat32[i] * inputFloat32[i];
                 }
                 const rms = Math.sqrt(sum / inputFloat32.length);
