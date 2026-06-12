@@ -29,13 +29,21 @@ android {
 
   signingConfigs {
     release {
-      // Keystore logic adapted from Reference Gradle (with environment variables removed)
-      storeFile file("${rootDir}/my-upload-key.jks")
-      storePassword "PLACEHOLDER_STORE_PASSWORD"
-      
-      // Alias set to "wife"
-      keyAlias "wife"
-      keyPassword "PLACEHOLDER_KEY_PASSWORD"
+      // Dynamic lookup of environment variables set by GitHub Actions
+      def keystoreFilePath = System.getenv("KEYSTORE_FILE")
+      def keystorePasswordVar = System.getenv("KEYSTORE_PASSWORD")
+      def keyAliasVar = System.getenv("KEY_ALIAS")
+      def keyPasswordVar = System.getenv("KEY_PASSWORD")
+
+      if (keystoreFilePath != null && !keystoreFilePath.isEmpty()) {
+        storeFile file(keystoreFilePath)
+      } else {
+        storeFile file("${rootDir}/my-upload-key.jks")
+      }
+
+      storePassword keystorePasswordVar ?: "PLACEHOLDER_STORE_PASSWORD"
+      keyAlias keyAliasVar ?: "wife"
+      keyPassword keyPasswordVar ?: "PLACEHOLDER_KEY_PASSWORD"
     }
     create("debugConfig") {
       storeFile file("${rootDir}/debug.keystore")
