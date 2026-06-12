@@ -78,10 +78,9 @@ android {
   }
 }
 
-// Configure the Secrets Gradle Plugin to use .env and .env.example files
+// Configure the Secrets Gradle Plugin to use .env file
 secrets {
   propertiesFileName = ".env"
-  defaultPropertiesFileName = ".env.example"
 }
 
 dependencies {
