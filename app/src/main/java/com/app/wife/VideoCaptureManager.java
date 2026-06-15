@@ -40,25 +40,34 @@ public class VideoCaptureManager {
 
     @SuppressLint("UnsafeOptInUsageError")
     public void startCapture(final LifecycleOwner lifecycleOwner, final OutputStream outputStream) {
-        if (isCapturing) return;
+        WifeLogger.log(TAG, "startCapture() invoked. Checking active camera capture status...");
+        if (isCapturing) {
+            WifeLogger.log(TAG, "startCapture() aborted: Camera capture is already active.");
+            return;
+        }
         isCapturing = true;
 
+        WifeLogger.log(TAG, "Transitioning to main executor to initialize CameraX providers...");
         ContextCompat.getMainExecutor(context).execute(() -> {
             try {
                 cameraProvider = ProcessCameraProvider.getInstance(context).get();
+                WifeLogger.log(TAG, "CameraX ProcessCameraProvider successfully retrieved.");
                 
                 CameraSelector selector = new CameraSelector.Builder()
                         .requireLensFacing(lensFacing)
                         .build();
+                WifeLogger.log(TAG, "CameraSelector built successfully. Lens Direction Index: " + lensFacing);
 
                 imageAnalysis = new ImageAnalysis.Builder()
                         .setTargetResolution(new Size(320, 240))
                         .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                         .build();
+                WifeLogger.log(TAG, "ImageAnalysis configured with resolution 320x240 (Keep Only Latest).");
 
                 imageAnalysis.setAnalyzer(cameraExecutor, imageProxy -> {
                     try {
                         if (!isCapturing) {
+                            WifeLogger.log(TAG, "Analyzer callback triggered but isCapturing is false. Releasing frame.");
                             imageProxy.close();
                             return;
                         }
@@ -76,21 +85,31 @@ public class VideoCaptureManager {
                                     outputStream.write(jpegData);
                                     outputStream.flush();
                                 }
+                            } else {
+                                WifeLogger.log(TAG, "Analyzer: Stride-aware YUV conversion returned a null JPEG payload. Frame skipped.");
                             }
+                        } else {
+                            WifeLogger.log(TAG, "Analyzer: ImageProxy wrapped image was null. Frame skipped.");
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "Frame analysis stream failed: " + e.getMessage());
+                        WifeLogger.log(TAG, "Frame analyzer loop or stream output encountered an exception: " + e.getMessage(), e);
                     } finally {
                         imageProxy.close();
                     }
                 });
 
+                WifeLogger.log(TAG, "Unbinding previous camera configurations from provider.");
                 cameraProvider.unbindAll();
+                
+                WifeLogger.log(TAG, "Binding CameraX lifecycle to current LifecycleOwner.");
                 cameraProvider.bindToLifecycle(lifecycleOwner, selector, imageAnalysis);
                 Log.d(TAG, "CameraX analyzer configured and bound.");
+                WifeLogger.log(TAG, "CameraX pipeline successfully bound to active UI context.");
 
             } catch (Exception e) {
                 Log.e(TAG, "CameraX initialization failed: " + e.getMessage());
+                WifeLogger.log(TAG, "Failed initializing CameraX components: " + e.getMessage(), e);
             }
         });
     }
@@ -98,17 +117,22 @@ public class VideoCaptureManager {
     public synchronized void switchCamera(final LifecycleOwner lifecycleOwner, final OutputStream outputStream) {
         lensFacing = (lensFacing == CameraSelector.LENS_FACING_FRONT) ? 
                 CameraSelector.LENS_FACING_BACK : CameraSelector.LENS_FACING_FRONT;
+        WifeLogger.log(TAG, "switchCamera() invoked. Toggling target lens facing index to: " + lensFacing);
         if (isCapturing) {
+            WifeLogger.log(TAG, "Re-binding camera capture with updated lens configuration.");
             stopCapture();
             startCapture(lifecycleOwner, outputStream);
         }
     }
 
     public synchronized void stopCapture() {
+        WifeLogger.log(TAG, "stopCapture() invoked. Halting camera capture and unbinding providers...");
         isCapturing = false;
         if (cameraProvider != null) {
+            WifeLogger.log(TAG, "Unbinding all CameraX pipeline use cases.");
             cameraProvider.unbindAll();
         }
+        WifeLogger.log(TAG, "Camera capture unbind processes finalized.");
     }
 
     private byte[] convertYuvToJpeg(ImageProxy image) {
@@ -170,6 +194,7 @@ public class VideoCaptureManager {
             return out.toByteArray();
         } catch (Exception e) {
             Log.e(TAG, "Nv21 compression to JPEG failed: " + e.getMessage());
+            WifeLogger.log(TAG, "Stride-aware conversion NV21-to-JPEG compression failed: " + e.getMessage(), e);
             return null;
         }
     }
