@@ -2,6 +2,8 @@ package com.wife.app;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
@@ -32,6 +34,17 @@ public class VideoCaptureManager {
     private ImageAnalysis imageAnalysis;
     private boolean isCapturing = false;
     private int lensFacing = CameraSelector.LENS_FACING_FRONT;
+
+    // Static listener to relay local camera frame bitmaps back to our active UI layout
+    private static volatile LocalFrameListener localFrameListener;
+
+    public interface LocalFrameListener {
+        void onLocalFrameCaptured(Bitmap bitmap);
+    }
+
+    public static void setLocalFrameListener(LocalFrameListener listener) {
+        localFrameListener = listener;
+    }
 
     public VideoCaptureManager(Context context) {
         this.context = context;
@@ -76,6 +89,19 @@ public class VideoCaptureManager {
                         if (img != null) {
                             byte[] jpegData = convertYuvToJpeg(imageProxy);
                             if (jpegData != null) {
+                                // If a local listener is registered, decode the JPEG locally and dispatch it to the PIP view
+                                LocalFrameListener listener = localFrameListener;
+                                if (listener != null) {
+                                    try {
+                                        Bitmap localBitmap = BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length);
+                                        if (localBitmap != null) {
+                                            listener.onLocalFrameCaptured(localBitmap);
+                                        }
+                                    } catch (Exception decodeEx) {
+                                        WifeLogger.log(TAG, "Failed to decode captured preview frame: " + decodeEx.getMessage(), decodeEx);
+                                    }
+                                }
+
                                 // Write JPEG size as integer (4 bytes), then the actual byte payload
                                 ByteBuffer sizeBuf = ByteBuffer.allocate(4);
                                 sizeBuf.putInt(jpegData.length);
