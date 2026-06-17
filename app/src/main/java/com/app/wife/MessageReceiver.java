@@ -102,6 +102,25 @@ public class MessageReceiver implements Runnable {
             WifeLogger.log(TAG, "Control event matched: 'handshake'. Handshake payload processed successfully.");
             // ConnectionManager.getInstance(context).updatePeerIpFromAccept(peerIp); // Redundant now as it is executed on method entry
         }
+
+        // Check for Unsend/Global Delete Signal
+        if ("unsend".equals(valType)) {
+            WifeLogger.log(TAG, "Control event matched: 'unsend'. Extracting target message parameters.");
+            try {
+                long targetTimestamp = json.get("timestamp").getAsLong();
+                WifeLogger.log(TAG, "Target message timestamp resolved: " + targetTimestamp + ". Executing db purge.");
+                
+                // 1. Purge from local SQLite database using your newly added DAO query
+                RoomDatabaseManager.getInstance(context).messageDao().deleteByTimestamp(targetTimestamp);
+                WifeLogger.log(TAG, "Unsent message successfully purged from local database.");
+
+                // 2. Notify the active Chat screen UI to remove the message bubble instantly
+                ChatManager.getInstance(context).notifyMessageUnsent(targetTimestamp);
+                WifeLogger.log(TAG, "Dispatched unsend notification to active ChatManager observers.");
+            } catch (Exception e) {
+                WifeLogger.log(TAG, "Failed to process incoming unsend control signal: " + e.getMessage(), e);
+            }
+        }
     }
 
     private void handleTextMessage(String valType, JsonObject json) {
