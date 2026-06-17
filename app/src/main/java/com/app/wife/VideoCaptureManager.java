@@ -226,13 +226,23 @@ public class VideoCaptureManager {
             return null;
         }
 
-        // Rotate the compressed JPEG bytes natively if target rotation is non-zero
-        if (rotationDegrees != 0 && jpegBytes != null) {
+        // Apply native adjustments: Rotate upright and horizontally flip if front camera is active
+        if (jpegBytes != null && (rotationDegrees != 0 || lensFacing == CameraSelector.LENS_FACING_FRONT)) {
             try {
                 Bitmap rawBitmap = BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.length);
                 if (rawBitmap != null) {
                     android.graphics.Matrix matrix = new android.graphics.Matrix();
-                    matrix.postRotate(rotationDegrees);
+                    
+                    // 1. Force portrait rotation based on hardware sensor degrees
+                    if (rotationDegrees != 0) {
+                        matrix.postRotate(rotationDegrees);
+                    }
+                    
+                    // 2. Un-mirror the front camera selfie preview so hair and facial coordinates display correctly (true perspective)
+                    if (lensFacing == CameraSelector.LENS_FACING_FRONT) {
+                        matrix.postScale(-1f, 1f);
+                    }
+                    
                     Bitmap rotatedBitmap = Bitmap.createBitmap(rawBitmap, 0, 0, rawBitmap.getWidth(), rawBitmap.getHeight(), matrix, true);
                     
                     if (rotatedBitmap != rawBitmap) {
@@ -247,7 +257,7 @@ public class VideoCaptureManager {
                     }
                 }
             } catch (Exception rotateEx) {
-                WifeLogger.log(TAG, "Failed to natively rotate camera stream bytes: " + rotateEx.getMessage(), rotateEx);
+                WifeLogger.log(TAG, "Failed to post-process camera stream bytes: " + rotateEx.getMessage(), rotateEx);
             }
         }
 
