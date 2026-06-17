@@ -23,6 +23,8 @@ public class AudioCaptureManager {
     private static final int CHANNEL_CONFIG = AudioFormat.CHANNEL_IN_MONO;
     private static final int AUDIO_FORMAT = AudioFormat.ENCODING_PCM_16BIT;
 
+    private static volatile AudioCaptureManager instance;
+
     private final Context context;
     private AudioRecord audioRecord;
     private boolean isRecording = false;
@@ -30,6 +32,17 @@ public class AudioCaptureManager {
 
     private AcousticEchoCanceler echoCanceler;
     private NoiseSuppressor noiseSuppressor;
+
+    public static AudioCaptureManager getInstance(Context context) {
+        if (instance == null) {
+            synchronized (AudioCaptureManager.class) {
+                if (instance == null) {
+                    instance = new AudioCaptureManager(context.getApplicationContext());
+                }
+            }
+        }
+        return instance;
+    }
 
     public AudioCaptureManager(Context context) {
         this.context = context;
