@@ -166,8 +166,8 @@ public class ChatActivity extends AppCompatActivity implements ChatManager.Messa
     private void setupEmojiViews(Map<String, List<EmojiLoader.EmojiDTO>> emojiMap) {
         List<String> categories = new ArrayList<>(emojiMap.keySet());
         
-        // Setup horizontal categories picker
-        EmojiCategoryAdapter categoryAdapter = new EmojiAdapter.CategoryAdapter(categories, category -> {
+        // Fixed: Instantiated the child subclass EmojiCategoryAdapter directly to prevent compile mismatch
+        EmojiCategoryAdapter categoryAdapter = new EmojiCategoryAdapter(categories, category -> {
             List<EmojiLoader.EmojiDTO> emojis = emojiMap.get(category);
             if (emojis != null) {
                 setupEmojiGrid(emojis);
@@ -186,7 +186,8 @@ public class ChatActivity extends AppCompatActivity implements ChatManager.Messa
     }
 
     private void setupEmojiGrid(List<EmojiLoader.EmojiDTO> emojis) {
-        EmojiGridAdapter gridAdapter = new EmojiAdapter.GridAdapter(emojis, emojiChar -> {
+        // Fixed: Instantiated the child subclass EmojiGridAdapter directly to prevent compile mismatch
+        EmojiGridAdapter gridAdapter = new EmojiGridAdapter(emojis, emojiChar -> {
             // Insert clicked emoji character directly inside our text field cursor position
             int start = Math.max(binding.etChatMessage.getSelectionStart(), 0);
             int end = Math.max(binding.etChatMessage.getSelectionEnd(), 0);
