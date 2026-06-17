@@ -226,7 +226,7 @@ public class ChatActivity extends AppCompatActivity implements ChatManager.Messa
 
     private void startVoiceRecording() {
         try {
-            voiceNoteFile = File.createTempFile("voice_note_", ".mp4", getCacheDir());
+            voiceNoteFile = File.createTempFile("voice_note_", ".mp3", getCacheDir());
             mediaRecorder = new MediaRecorder();
             mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
             mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
