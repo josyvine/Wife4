@@ -90,7 +90,9 @@ public class FileReceiver implements Runnable {
                 serverChannel.socket().bind(new InetSocketAddress(Constants.OFF_PORT_FILE));
                 WifeLogger.log(TAG, "ServerSocketChannel successfully bound. Entering persistent accept loop.");
 
-                while (!FileTransferForegroundService.isCancelled) {
+                // Symmetrical Fix: The accept loop tracks the ServerSocketChannel's open state.
+                // It remains active and listening regardless of individual transfer cancellations.
+                while (serverChannel.isOpen()) {
                     clientChannel = serverChannel.accept();
                     clientChannel.configureBlocking(true);
                     
@@ -101,7 +103,7 @@ public class FileReceiver implements Runnable {
                 }
             } catch (Exception e) {
                 WifeLogger.log(TAG, "ServerSocketChannel threw exception or was closed: " + e.getMessage());
-                if (!FileTransferForegroundService.isCancelled) {
+                if (serverChannel != null && serverChannel.isOpen()) {
                     broadcastError(context, e.getMessage());
                 }
             } finally {
@@ -118,6 +120,10 @@ public class FileReceiver implements Runnable {
      * Processes metadata headers and LZ4 decompression segments sequentially over the active SocketChannel.
      */
     private static void processPersistentStream(Context context, SocketChannel socketChannel) throws Exception {
+        // Reset static cancellation state for this fresh inbound transaction
+        FileTransferForegroundService.isCancelled = false;
+        FileTransferForegroundService.isPaused = false;
+
         InputStream rawSocketIn = socketChannel.socket().getInputStream();
         NonClosingInputStream proxyIn = new NonClosingInputStream(rawSocketIn);
         int fileIndex = 0;
@@ -133,6 +139,10 @@ public class FileReceiver implements Runnable {
                     return;
                 }
                 bytesRead += read;
+            }
+
+            if (FileTransferForegroundService.isCancelled) {
+                break;
             }
 
             lenBuf.flip();
@@ -154,6 +164,10 @@ public class FileReceiver implements Runnable {
                     throw new IOException("Stream ended abruptly while reading metadata payload.");
                 }
                 bytesRead += read;
+            }
+
+            if (FileTransferForegroundService.isCancelled) {
+                break;
             }
 
             metaBuf.flip();
