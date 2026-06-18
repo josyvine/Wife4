@@ -258,20 +258,20 @@ public class FileReceiver implements Runnable {
                             break;
                         }
 
-                        int bytesToRead = (int) Math.min(buffer.length, compressedSize - totalBytesProcessed);
+                        int bytesToRead = (int) Math.min(buffer.length, compressedSize - totalBytesRead);
                         int read = proxyIn.read(buffer, 0, bytesToRead);
                         if (read == -1) {
                             throw new IOException("Connection severed abruptly during raw payload transfer.");
                         }
 
                         fos.write(buffer, 0, read);
-                        totalBytesProcessed += read;
+                        totalBytesRead += read;
 
                         // Throttle notification updates
                         long currentTime = System.currentTimeMillis();
                         if (currentTime - lastNotificationUpdateTime >= 500) {
-                            int percent = (int) ((totalBytesProcessed * 100) / compressedSize);
-                            notifyProgress(context, filename, percent, totalBytesProcessed, compressedSize, fileIndex);
+                            int percent = (int) ((totalBytesRead * 100) / compressedSize);
+                            notifyProgress(context, filename, percent, totalBytesRead, compressedSize, fileIndex);
                             lastNotificationUpdateTime = currentTime;
                         }
                     }
@@ -282,7 +282,7 @@ public class FileReceiver implements Runnable {
                     WifeLogger.log(TAG, "Compressed payload received. Decompressing file locally: " + fileDest.getAbsolutePath());
 
                     // 4. Decompress the fully cached temporary file to its final destination
-                    try (FileInputStream fis = new FileInputStream(tempDecryptedFile);
+                    try (FileInputStream fis = new FileInputStream(tempCompressedFile);
                          FileOutputStream fos = new FileOutputStream(fileDest)) {
                         CompressionUtils.decompress(fis, fos);
                     }
